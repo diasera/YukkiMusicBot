@@ -96,10 +96,10 @@ async def executor(client, message):
                 ]
             ]
         )
-        await message.reply_document(
+        await client.send_document(
+            message.chat.id,
             document=filename,
             caption=f"**INPUT:**\n`{cmd[0:980]}`\n\n**OUTPUT:**\n`Attached Document`",
-            quote=False,
             reply_markup=keyboard,
         )
         await message.delete()
@@ -197,9 +197,9 @@ async def shellrunner(client, message):
             print(err)
             exc_type, exc_obj, exc_tb = sys.exc_info()
             errors = traceback.format_exception(
-                etype=exc_type,
-                value=exc_obj,
-                tb=exc_tb,
+                exc_type,
+                exc_obj,
+                exc_tb,
             )
             return await edit_or_reply(
                 message, text=f"**ERROR:**\n```{''.join(errors)}```"
@@ -214,7 +214,7 @@ async def shellrunner(client, message):
             await client.send_document(
                 message.chat.id,
                 "output.txt",
-                reply_to_message_id=message.message_id,
+                reply_to_message_id=message.id,
                 caption="`Output`",
             )
             return os.remove("output.txt")

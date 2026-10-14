@@ -11,8 +11,8 @@ import os
 import re
 
 import yt_dlp
-from pykeyboard import InlineKeyboard
 from pyrogram import filters
+from pyrogram.enums import ChatAction
 from pyrogram.types import (InlineKeyboardButton,
                             InlineKeyboardMarkup, InputMediaAudio,
                             InputMediaVideo, Message)
@@ -23,6 +23,7 @@ from strings import get_command
 from YukkiMusic import YouTube, app
 from YukkiMusic.utils.decorators.language import language, languageCB
 from YukkiMusic.utils.formatters import convert_bytes
+from YukkiMusic.utils.inline.keyboard import InlineKeyboard
 from YukkiMusic.utils.inline.song import song_markup
 
 # Command
@@ -32,7 +33,6 @@ SONG_COMMAND = get_command("SONG_COMMAND")
 @app.on_message(
     filters.command(SONG_COMMAND)
     & filters.group
-    & ~filters.edited
     & ~BANNED_USERS
 )
 @language
@@ -56,7 +56,6 @@ async def song_commad_group(client, message: Message, _):
 @app.on_message(
     filters.command(SONG_COMMAND)
     & filters.private
-    & ~filters.edited
     & ~BANNED_USERS
 )
 @language
@@ -241,10 +240,12 @@ async def song_download_cb(client, CallbackQuery, _):
     stype, format_id, vidid = callback_request.split("|")
     mystic = await CallbackQuery.edit_message_text(_["song_8"])
     yturl = f"https://www.youtube.com/watch?v={vidid}"
-    with yt_dlp.YoutubeDL({"quiet": True}) as ytdl:
+    with yt_dlp.YoutubeDL(
+        {"quiet": True, "js_runtimes": {"deno": {}, "node": {}}}
+    ) as ytdl:
         x = ytdl.extract_info(yturl, download=False)
     title = (x["title"]).title()
-    title = re.sub("\W+", " ", title)
+    title = re.sub(r"\W+", " ", title)
     thumb_image_path = await CallbackQuery.message.download()
     duration = x["duration"]
     if stype == "video":
@@ -273,7 +274,7 @@ async def song_download_cb(client, CallbackQuery, _):
         await mystic.edit_text(_["song_11"])
         await app.send_chat_action(
             chat_id=CallbackQuery.message.chat.id,
-            action="upload_video",
+            action=ChatAction.UPLOAD_VIDEO,
         )
         try:
             await CallbackQuery.edit_message_media(media=med)
@@ -302,7 +303,7 @@ async def song_download_cb(client, CallbackQuery, _):
         await mystic.edit_text(_["song_11"])
         await app.send_chat_action(
             chat_id=CallbackQuery.message.chat.id,
-            action="upload_audio",
+            action=ChatAction.UPLOAD_AUDIO,
         )
         try:
             await CallbackQuery.edit_message_media(media=med)

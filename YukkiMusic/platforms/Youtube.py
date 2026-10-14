@@ -14,8 +14,9 @@ from typing import Union
 
 import aiohttp
 import yt_dlp
+from py_yt import VideosSearch
+from pyrogram.enums import MessageEntityType
 from pyrogram.types import Message
-from youtubesearchpython.__future__ import VideosSearch
 
 import config
 from YukkiMusic.utils.database import is_on_off
@@ -72,13 +73,13 @@ class YouTubeAPI:
                 break
             if message.entities:
                 for entity in message.entities:
-                    if entity.type == "url":
+                    if entity.type == MessageEntityType.URL:
                         text = message.text or message.caption
                         offset, length = entity.offset, entity.length
                         break
             elif message.caption_entities:
                 for entity in message.caption_entities:
-                    if entity.type == "text_link":
+                    if entity.type == MessageEntityType.TEXT_LINK:
                         return entity.url
         if offset in (None,):
             return None
@@ -148,6 +149,8 @@ class YouTubeAPI:
             link = link.split("&")[0]
         proc = await asyncio.create_subprocess_exec(
             "yt-dlp",
+            "--js-runtimes",
+            "node",
             "-g",
             "-f",
             "best[height<=?720][width<=?1280]",
@@ -210,7 +213,10 @@ class YouTubeAPI:
             link = self.base + link
         if "&" in link:
             link = link.split("&")[0]
-        ytdl_opts = {"quiet": True}
+        ytdl_opts = {
+            "quiet": True,
+            "js_runtimes": {"deno": {}, "node": {}},
+        }
         ydl = yt_dlp.YoutubeDL(ytdl_opts)
         with ydl:
             formats_available = []
@@ -283,6 +289,7 @@ class YouTubeAPI:
                 "geo_bypass": True,
                 "nocheckcertificate": True,
                 "quiet": True,
+                "js_runtimes": {"deno": {}, "node": {}},
                 "no_warnings": True,
             }
             x = yt_dlp.YoutubeDL(ydl_optssx)
@@ -302,6 +309,7 @@ class YouTubeAPI:
                 "geo_bypass": True,
                 "nocheckcertificate": True,
                 "quiet": True,
+                "js_runtimes": {"deno": {}, "node": {}},
                 "no_warnings": True,
             }
             x = yt_dlp.YoutubeDL(ydl_optssx)
@@ -323,6 +331,7 @@ class YouTubeAPI:
                 "geo_bypass": True,
                 "nocheckcertificate": True,
                 "quiet": True,
+                "js_runtimes": {"deno": {}, "node": {}},
                 "no_warnings": True,
                 "prefer_ffmpeg": True,
                 "merge_output_format": "mp4",
@@ -338,6 +347,7 @@ class YouTubeAPI:
                 "geo_bypass": True,
                 "nocheckcertificate": True,
                 "quiet": True,
+                "js_runtimes": {"deno": {}, "node": {}},
                 "no_warnings": True,
                 "prefer_ffmpeg": True,
                 "postprocessors": [
@@ -368,6 +378,8 @@ class YouTubeAPI:
             else:
                 proc = await asyncio.create_subprocess_exec(
                     "yt-dlp",
+                    "--js-runtimes",
+                    "node",
                     "-g",
                     "-f",
                     "best[height<=?720][width<=?1280]",

@@ -7,7 +7,6 @@
 #
 # All rights reserved.
 
-from pykeyboard import InlineKeyboard
 from pyrogram import filters
 from pyrogram.types import InlineKeyboardButton, Message
 
@@ -17,6 +16,7 @@ from YukkiMusic import app
 from YukkiMusic.utils.database import get_lang, set_lang
 from YukkiMusic.utils.decorators import (ActualAdminCB, language,
                                          languageCB)
+from YukkiMusic.utils.inline.keyboard import InlineKeyboard
 
 # Languages Available
 
@@ -52,7 +52,6 @@ LANGUAGE_COMMAND = get_command("LANGUAGE_COMMAND")
 @app.on_message(
     filters.command(LANGUAGE_COMMAND)
     & filters.group
-    & ~filters.edited
     & ~BANNED_USERS
 )
 @language

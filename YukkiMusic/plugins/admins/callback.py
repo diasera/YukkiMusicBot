@@ -1,7 +1,8 @@
 import random
 
 from pyrogram import filters
-from pyrogram.types import CallbackQuery, InlineKeyboardMarkup
+from pyrogram.types import (CallbackQuery, InlineKeyboardMarkup,
+                            LinkPreviewOptions)
 
 from config import (AUTO_DOWNLOADS_CLEAR, BANNED_USERS,
                     SOUNCLOUD_IMG_URL, STREAM_IMG_URL,
@@ -44,7 +45,7 @@ async def markup_panel(client, CallbackQuery: CallbackQuery, _):
         return
     if chat_id not in wrong:
         wrong[chat_id] = {}
-    wrong[chat_id][CallbackQuery.message.message_id] = False
+    wrong[chat_id][CallbackQuery.message.id] = False
 
 
 @app.on_callback_query(filters.regex("MainMarkup") & ~BANNED_USERS)
@@ -67,7 +68,7 @@ async def del_back_playlist(client, CallbackQuery, _):
         return
     if chat_id not in wrong:
         wrong[chat_id] = {}
-    wrong[chat_id][CallbackQuery.message.message_id] = True
+    wrong[chat_id][CallbackQuery.message.id] = True
 
 
 @app.on_callback_query(filters.regex("Pages") & ~BANNED_USERS)
@@ -279,7 +280,8 @@ async def del_back_playlist(client, CallbackQuery, _):
             await CallbackQuery.edit_message_text(txt)
         elif "vid_" in queued:
             mystic = await CallbackQuery.message.reply_text(
-                _["call_10"], disable_web_page_preview=True
+                _["call_10"],
+                link_preview_options=LinkPreviewOptions(is_disabled=True),
             )
             try:
                 file_path, direct = await YouTube.download(

@@ -15,7 +15,7 @@ import aiofiles
 import aiohttp
 from PIL import (Image, ImageDraw, ImageEnhance, ImageFilter,
                  ImageFont, ImageOps)
-from youtubesearchpython.__future__ import VideosSearch
+from py_yt import VideosSearch
 
 from config import MUSIC_BOT_NAME, YOUTUBE_IMG_URL
 
@@ -39,7 +39,7 @@ async def gen_thumb(videoid):
         for result in (await results.next())["result"]:
             try:
                 title = result["title"]
-                title = re.sub("\W+", " ", title)
+                title = re.sub(r"\W+", " ", title)
                 title = title.title()
             except:
                 title = "Unsupported Title"
@@ -79,7 +79,7 @@ async def gen_thumb(videoid):
         x2 = Xcenter + 250
         y2 = Ycenter + 250
         logo = youtube.crop((x1, y1, x2, y2))
-        logo.thumbnail((520, 520), Image.ANTIALIAS)
+        logo.thumbnail((520, 520), Image.Resampling.LANCZOS)
         logo = ImageOps.expand(logo, border=15, fill="white")
         background.paste(logo, (50, 100))
         draw = ImageDraw.Draw(background)

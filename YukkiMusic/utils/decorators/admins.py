@@ -7,6 +7,7 @@
 #
 # All rights reserved.
 
+from pyrogram.enums import ChatMemberStatus, ChatType
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from config import adminlist
@@ -20,6 +21,14 @@ from YukkiMusic.utils.database import (get_authuser_names, get_cmode,
                                        is_nonadmin_chat)
 
 from ..formatters import int_to_alpha
+
+
+def can_manage_vc(member) -> bool:
+    if member.status == ChatMemberStatus.OWNER:
+        return True
+    return bool(
+        member.privileges and member.privileges.can_manage_video_chats
+    )
 
 
 def AdminRightsCheck(mystic):
@@ -117,7 +126,7 @@ def AdminActual(mystic):
                 )
             except:
                 return
-            if not member.can_manage_voice_chats:
+            if not can_manage_vc(member):
                 return await message.reply(_["general_5"])
         return await mystic(client, message, _)
 
@@ -137,7 +146,7 @@ def ActualAdminCB(mystic):
             _ = get_string(language)
         except:
             _ = get_string("en")
-        if CallbackQuery.message.chat.type == "private":
+        if CallbackQuery.message.chat.type == ChatType.PRIVATE:
             return await mystic(client, CallbackQuery, _)
         is_non_admin = await is_nonadmin_chat(
             CallbackQuery.message.chat.id
@@ -152,7 +161,7 @@ def ActualAdminCB(mystic):
                 return await CallbackQuery.answer(
                     _["general_5"], show_alert=True
                 )
-            if not a.can_manage_voice_chats:
+            if not can_manage_vc(a):
                 if CallbackQuery.from_user.id not in SUDOERS:
                     token = await int_to_alpha(
                         CallbackQuery.from_user.id

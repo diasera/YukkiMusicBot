@@ -7,6 +7,8 @@
 #
 # All rights reserved.
 
+from pyrogram.types import LinkPreviewOptions
+
 from config import LOG, LOG_GROUP_ID
 from YukkiMusic import app
 from YukkiMusic.utils.database import is_on_off
@@ -35,7 +37,7 @@ async def play_logs(message, streamtype):
                 await app.send_message(
                     LOG_GROUP_ID,
                     f"{logger_text}",
-                    disable_web_page_preview=True,
+                    link_preview_options=LinkPreviewOptions(is_disabled=True),
                 )
             except:
                 pass

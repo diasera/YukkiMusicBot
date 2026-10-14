@@ -21,6 +21,7 @@ import urllib3
 from git import Repo
 from git.exc import GitCommandError, InvalidGitRepositoryError
 from pyrogram import filters
+from pyrogram.types import LinkPreviewOptions
 
 import config
 from strings import get_command
@@ -271,7 +272,8 @@ async def update_(client, message, _):
         )
     else:
         nrs = await response.edit(
-            _final_updates_, disable_web_page_preview=True
+            _final_updates_,
+            link_preview_options=LinkPreviewOptions(is_disabled=True),
         )
     os.system("git stash &> /dev/null && git pull")
     if await is_heroku():

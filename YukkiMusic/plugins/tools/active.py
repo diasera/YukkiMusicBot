@@ -8,7 +8,7 @@
 # All rights reserved.
 
 from pyrogram import filters
-from pyrogram.types import Message
+from pyrogram.types import LinkPreviewOptions, Message
 
 from strings import get_command
 from YukkiMusic import app
@@ -45,7 +45,7 @@ async def activevc(_, message: Message):
     else:
         await mystic.edit_text(
             f"**Active Voice Chats:-**\n\n{text}",
-            disable_web_page_preview=True,
+            link_preview_options=LinkPreviewOptions(is_disabled=True),
         )
 
 
@@ -73,5 +73,5 @@ async def activevi_(_, message: Message):
     else:
         await mystic.edit_text(
             f"**Active Video Calls:-**\n\n{text}",
-            disable_web_page_preview=True,
+            link_preview_options=LinkPreviewOptions(is_disabled=True),
         )
