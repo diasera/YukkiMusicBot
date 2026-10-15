@@ -7,6 +7,7 @@
 #
 # All rights reserved.
 
+import asyncio
 import random
 import re
 import string
@@ -16,17 +17,17 @@ from pyrogram import filters
 from pyrogram.types import (InlineKeyboardButton,
                             InlineKeyboardMarkup, Message)
 
-from config import BANNED_USERS, lyrical
+from config import BANNED_USERS, GENIUS_API_KEY, lyrical
 from strings import get_command
 from YukkiMusic import app
+from YukkiMusic.utils.cache import trim_oldest
 from YukkiMusic.utils.decorators.language import language
 
 ###Commands
 LYRICS_COMMAND = get_command("LYRICS_COMMAND")
 
-api_key = "Vd9FvPMOKWfsKJNG9RbZnItaTNIRFzVyyXFdrGHONVsGqHcHBoj3AI3sIlNuqzuf0ZNG8uLcF9wAd5DXBBnUzA"
 y = lg.Genius(
-    api_key,
+    GENIUS_API_KEY,
     skip_non_songs=True,
     excluded_terms=["(Remix)", "(Live)"],
     remove_section_headers=True,
@@ -43,7 +44,7 @@ async def lrsearch(client, message: Message, _):
         return await message.reply_text(_["lyrics_1"])
     title = message.text.split(None, 1)[1]
     m = await message.reply_text(_["lyrics_2"])
-    S = y.search_song(title, get_full_info=False)
+    S = await asyncio.to_thread(y.search_song, title, get_full_info=False)
     if S is None:
         return await m.edit(_["lyrics_3"].format(title))
     ran_hash = "".join(
@@ -53,6 +54,7 @@ async def lrsearch(client, message: Message, _):
     if "Embed" in lyric:
         lyric = re.sub(r"\d*Embed", "", lyric)
     lyrical[ran_hash] = lyric
+    trim_oldest(lyrical, 500, keep=lambda v: isinstance(v, asyncio.Task))
     upl = InlineKeyboardMarkup(
         [
             [

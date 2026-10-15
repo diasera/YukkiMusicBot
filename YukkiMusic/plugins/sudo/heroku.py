@@ -25,7 +25,7 @@ from pyrogram.types import LinkPreviewOptions
 
 import config
 from strings import get_command
-from YukkiMusic import app
+from YukkiMusic import LOGGER, app
 from YukkiMusic.misc import HAPP, SUDOERS, XCB
 from YukkiMusic.utils.database import (get_active_chats,
                                        remove_active_chat,
@@ -56,7 +56,7 @@ async def log_(client, message, _):
         if await is_heroku():
             if HAPP is None:
                 return await message.reply_text(_["heroku_1"])
-            data = HAPP.get_log()
+            data = await asyncio.to_thread(HAPP.get_log)
             link = await Yukkibin(data)
             return await message.reply_text(link)
         else:
@@ -66,7 +66,7 @@ async def log_(client, message, _):
                 data = ""
                 try:
                     NUMB = int(message.text.split(None, 1)[1])
-                except:
+                except Exception:
                     NUMB = 100
                 for x in lines[-NUMB:]:
                     data += x
@@ -75,7 +75,7 @@ async def log_(client, message, _):
             else:
                 return await message.reply_text(_["heroku_2"])
     except Exception as e:
-        print(e)
+        LOGGER(__name__).warning(e)
         await message.reply_text(_["heroku_2"])
 
 
@@ -89,7 +89,7 @@ async def varget_(client, message, _):
     if await is_heroku():
         if HAPP is None:
             return await message.reply_text(_["heroku_1"])
-        heroku_config = HAPP.config()
+        heroku_config = await asyncio.to_thread(HAPP.config)
         if check_var in heroku_config:
             return await message.reply_text(
                 f"**{check_var}:** `{heroku_config[check_var]}`"
@@ -119,10 +119,10 @@ async def vardel_(client, message, _):
     if await is_heroku():
         if HAPP is None:
             return await message.reply_text(_["heroku_1"])
-        heroku_config = HAPP.config()
+        heroku_config = await asyncio.to_thread(HAPP.config)
         if check_var in heroku_config:
             await message.reply_text(_["heroku_7"].format(check_var))
-            del heroku_config[check_var]
+            await asyncio.to_thread(heroku_config.__delitem__, check_var)
         else:
             return await message.reply_text(_["heroku_4"])
     else:
@@ -148,12 +148,12 @@ async def set_var(client, message, _):
     if await is_heroku():
         if HAPP is None:
             return await message.reply_text(_["heroku_1"])
-        heroku_config = HAPP.config()
+        heroku_config = await asyncio.to_thread(HAPP.config)
         if to_set in heroku_config:
             await message.reply_text(_["heroku_9"].format(to_set))
         else:
             await message.reply_text(_["heroku_10"].format(to_set))
-        heroku_config[to_set] = value
+        await asyncio.to_thread(heroku_config.__setitem__, to_set, value)
     else:
         path = dotenv.find_dotenv()
         if not path:
@@ -176,20 +176,26 @@ async def usage_dynos(client, message, _):
     else:
         return await message.reply_text(_["heroku_11"])
     dyno = await message.reply_text(_["heroku_12"])
-    Heroku = heroku3.from_key(config.HEROKU_API_KEY)
-    account_id = Heroku.account().id
-    useragent = (
-        "Mozilla/5.0 (Linux; Android 10; SM-G975F) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/80.0.3987.149 Mobile Safari/537.36"
-    )
-    headers = {
-        "User-Agent": useragent,
-        "Authorization": f"Bearer {config.HEROKU_API_KEY}",
-        "Accept": "application/vnd.heroku+json; version=3.account-quotas",
-    }
-    path = "/accounts/" + account_id + "/actions/get-quota"
-    r = requests.get("https://api.heroku.com" + path, headers=headers)
+
+    def get_quota():
+        Heroku = heroku3.from_key(config.HEROKU_API_KEY)
+        account_id = Heroku.account().id
+        useragent = (
+            "Mozilla/5.0 (Linux; Android 10; SM-G975F) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/80.0.3987.149 Mobile Safari/537.36"
+        )
+        headers = {
+            "User-Agent": useragent,
+            "Authorization": f"Bearer {config.HEROKU_API_KEY}",
+            "Accept": "application/vnd.heroku+json; version=3.account-quotas",
+        }
+        path = "/accounts/" + account_id + "/actions/get-quota"
+        return requests.get(
+            "https://api.heroku.com" + path, headers=headers, timeout=30
+        )
+
+    r = await asyncio.to_thread(get_quota)
     if r.status_code != 200:
         return await dyno.edit("Unable to fetch.")
     result = r.json()
@@ -237,7 +243,7 @@ async def update_(client, message, _):
     except InvalidGitRepositoryError:
         return await response.edit(_["heroku_15"])
     to_exc = f"git fetch origin {config.UPSTREAM_BRANCH} &> /dev/null"
-    os.system(to_exc)
+    await asyncio.to_thread(os.system, to_exc)
     await asyncio.sleep(7)
     verification = ""
     REPO_ = repo.remotes.origin.url.split(".git")[
@@ -275,7 +281,7 @@ async def update_(client, message, _):
             _final_updates_,
             link_preview_options=LinkPreviewOptions(is_disabled=True),
         )
-    os.system("git stash &> /dev/null && git pull")
+    await asyncio.to_thread(os.system, "git stash &> /dev/null && git pull")
     if await is_heroku():
         try:
             served_chats = await get_active_chats()
@@ -345,7 +351,7 @@ async def restart_(_, message):
         shutil.rmtree(A)
         shutil.rmtree(B)
         shutil.rmtree(C)
-    except:
+    except Exception:
         pass
     await response.edit(
         "Reboot has been initiated successfully! Wait for 1 - 2 minutes until the bot restarts."

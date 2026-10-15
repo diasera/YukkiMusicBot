@@ -17,6 +17,7 @@ from YukkiMusic import app
 from YukkiMusic.core.call import Yukki, autoend
 from YukkiMusic.utils.database import (get_client, is_active_chat,
                                        is_autoend)
+from YukkiMusic.utils.tasks import create_task
 
 
 async def auto_leave():
@@ -53,13 +54,13 @@ async def auto_leave():
                                             chat_id
                                         )
                                         left += 1
-                                    except:
+                                    except Exception:
                                         continue
-                except:
+                except Exception:
                     pass
 
 
-asyncio.create_task(auto_leave())
+create_task(auto_leave(), "auto_leave")
 
 
 async def auto_end():
@@ -77,15 +78,15 @@ async def auto_end():
                 autoend[chat_id] = {}
                 try:
                     await Yukki.stop_stream(chat_id)
-                except:
+                except Exception:
                     continue
                 try:
                     await app.send_message(
                         chat_id,
                         "Bot has left voice chat due to inactivity to avoid overload on servers. No-one was listening to the bot on voice chat.",
                     )
-                except:
+                except Exception:
                     continue
 
 
-asyncio.create_task(auto_end())
+create_task(auto_end(), "auto_end")

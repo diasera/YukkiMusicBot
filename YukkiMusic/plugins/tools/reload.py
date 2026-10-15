@@ -51,7 +51,7 @@ async def reload_admin_cache(client, message: Message, _):
             user_id = await alpha_to_int(user)
             adminlist[chat_id].append(user_id)
         await message.reply_text(_["admin_20"])
-    except:
+    except Exception:
         await message.reply_text(
             "Failed to reload admincache. Make sure Bot is admin in your chat."
         )
@@ -71,18 +71,18 @@ async def restartbot(client, message: Message, _):
     try:
         db[message.chat.id] = []
         await Yukki.stop_stream(message.chat.id)
-    except:
+    except Exception:
         pass
     chat_id = await get_cmode(message.chat.id)
     if chat_id:
         try:
             await app.get_chat(chat_id)
-        except:
+        except Exception:
             pass
         try:
             db[chat_id] = []
             await Yukki.stop_stream(chat_id)
-        except:
+        except Exception:
             pass
     return await mystic.edit_text(
         "Successfully restarted. Try playing now.."
@@ -94,16 +94,7 @@ async def close_menu(_, CallbackQuery):
     try:
         await CallbackQuery.message.delete()
         await CallbackQuery.answer()
-    except:
-        return
-
-
-@app.on_callback_query(filters.regex("close") & ~BANNED_USERS)
-async def close_menu(_, CallbackQuery):
-    try:
-        await CallbackQuery.message.delete()
-        await CallbackQuery.answer()
-    except:
+    except Exception:
         return
 
 
@@ -128,7 +119,7 @@ async def stop_download(client, CallbackQuery: CallbackQuery, _):
             task.cancel()
             try:
                 lyrical.pop(message_id)
-            except:
+            except Exception:
                 pass
             await CallbackQuery.answer(
                 "Downloading Cancelled", show_alert=True
@@ -136,7 +127,7 @@ async def stop_download(client, CallbackQuery: CallbackQuery, _):
             return await CallbackQuery.edit_message_text(
                 f"Download Cancelled by {CallbackQuery.from_user.mention}"
             )
-        except:
+        except Exception:
             return await CallbackQuery.answer(
                 "Failed to stop the Downloading.", show_alert=True
             )

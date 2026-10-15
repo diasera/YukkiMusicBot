@@ -41,12 +41,12 @@ def AdminRightsCheck(mystic):
         if await is_commanddelete_on(message.chat.id):
             try:
                 await message.delete()
-            except:
+            except Exception:
                 pass
         try:
             language = await get_lang(message.chat.id)
             _ = get_string(language)
-        except:
+        except Exception:
             _ = get_string("en")
         if message.sender_chat:
             upl = InlineKeyboardMarkup(
@@ -68,7 +68,7 @@ def AdminRightsCheck(mystic):
                 return await message.reply_text(_["setting_12"])
             try:
                 await app.get_chat(chat_id)
-            except:
+            except Exception:
                 return await message.reply_text(_["cplay_4"])
         else:
             chat_id = message.chat.id
@@ -98,12 +98,12 @@ def AdminActual(mystic):
         if await is_commanddelete_on(message.chat.id):
             try:
                 await message.delete()
-            except:
+            except Exception:
                 pass
         try:
             language = await get_lang(message.chat.id)
             _ = get_string(language)
-        except:
+        except Exception:
             _ = get_string("en")
         if message.sender_chat:
             upl = InlineKeyboardMarkup(
@@ -124,7 +124,7 @@ def AdminActual(mystic):
                 member = await app.get_chat_member(
                     message.chat.id, message.from_user.id
                 )
-            except:
+            except Exception:
                 return
             if not can_manage_vc(member):
                 return await message.reply(_["general_5"])
@@ -144,7 +144,7 @@ def ActualAdminCB(mystic):
         try:
             language = await get_lang(CallbackQuery.message.chat.id)
             _ = get_string(language)
-        except:
+        except Exception:
             _ = get_string("en")
         if CallbackQuery.message.chat.type == ChatType.PRIVATE:
             return await mystic(client, CallbackQuery, _)
@@ -157,7 +157,7 @@ def ActualAdminCB(mystic):
                     CallbackQuery.message.chat.id,
                     CallbackQuery.from_user.id,
                 )
-            except:
+            except Exception:
                 return await CallbackQuery.answer(
                     _["general_5"], show_alert=True
                 )
@@ -175,7 +175,7 @@ def ActualAdminCB(mystic):
                                 _["general_5"],
                                 show_alert=True,
                             )
-                        except:
+                        except Exception:
                             return
         return await mystic(client, CallbackQuery, _)
 

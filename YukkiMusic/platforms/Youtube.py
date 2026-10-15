@@ -12,7 +12,6 @@ import os
 import re
 from typing import Union
 
-import aiohttp
 import yt_dlp
 from py_yt import VideosSearch
 from pyrogram.enums import MessageEntityType
@@ -179,7 +178,7 @@ class YouTubeAPI:
             for key in result:
                 if key == "":
                     result.remove(key)
-        except:
+        except Exception:
             result = []
         return result
 
@@ -217,34 +216,37 @@ class YouTubeAPI:
             "quiet": True,
             "js_runtimes": {"deno": {}, "node": {}},
         }
-        ydl = yt_dlp.YoutubeDL(ytdl_opts)
-        with ydl:
-            formats_available = []
-            r = ydl.extract_info(link, download=False)
-            for format in r["formats"]:
+
+        def extract():
+            with yt_dlp.YoutubeDL(ytdl_opts) as ydl:
+                return ydl.extract_info(link, download=False)
+
+        r = await asyncio.to_thread(extract)
+        formats_available = []
+        for format in r["formats"]:
+            try:
+                str(format["format"])
+            except Exception:
+                continue
+            if not "dash" in str(format["format"]).lower():
                 try:
-                    str(format["format"])
-                except:
+                    format["format"]
+                    format["filesize"]
+                    format["format_id"]
+                    format["ext"]
+                    format["format_note"]
+                except Exception:
                     continue
-                if not "dash" in str(format["format"]).lower():
-                    try:
-                        format["format"]
-                        format["filesize"]
-                        format["format_id"]
-                        format["ext"]
-                        format["format_note"]
-                    except:
-                        continue
-                    formats_available.append(
-                        {
-                            "format": format["format"],
-                            "filesize": format["filesize"],
-                            "format_id": format["format_id"],
-                            "ext": format["ext"],
-                            "format_note": format["format_note"],
-                            "yturl": link,
-                        }
-                    )
+                formats_available.append(
+                    {
+                        "format": format["format"],
+                        "filesize": format["filesize"],
+                        "format_id": format["format_id"],
+                        "ext": format["ext"],
+                        "format_note": format["format_note"],
+                        "yturl": link,
+                    }
+                )
         return formats_available, link
 
     async def slider(

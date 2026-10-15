@@ -13,7 +13,7 @@ from pyrogram import filters
 from pyrogram.types import InlineKeyboardMarkup
 
 from config import BANNED_USERS
-from YukkiMusic import app
+from YukkiMusic import LOGGER, app
 from YukkiMusic.utils.database import (get_global_tops,
                                        get_particulars, get_userss)
 from YukkiMusic.utils.decorators.language import languageCB
@@ -21,8 +21,6 @@ from YukkiMusic.utils.inline.playlist import (botplaylist_markup,
                                               failed_top_markup,
                                               top_play_markup)
 from YukkiMusic.utils.stream.stream import stream
-
-loop = asyncio.get_running_loop()
 
 
 @app.on_callback_query(
@@ -32,7 +30,7 @@ loop = asyncio.get_running_loop()
 async def get_play_markup(client, CallbackQuery, _):
     try:
         await CallbackQuery.answer()
-    except:
+    except Exception:
         pass
     buttons = botplaylist_markup(_)
     return await CallbackQuery.edit_message_reply_markup(
@@ -47,7 +45,7 @@ async def get_play_markup(client, CallbackQuery, _):
 async def get_topz_playlists(client, CallbackQuery, _):
     try:
         await CallbackQuery.answer()
-    except:
+    except Exception:
         pass
     buttons = top_play_markup(_)
     return await CallbackQuery.edit_message_reply_markup(
@@ -62,7 +60,7 @@ async def server_to_play(client, CallbackQuery, _):
     user_name = CallbackQuery.from_user.first_name
     try:
         await CallbackQuery.answer()
-    except:
+    except Exception:
         pass
     callback_data = CallbackQuery.data.strip()
     what = callback_data.split(None, 1)[1]
@@ -116,9 +114,9 @@ async def server_to_play(client, CallbackQuery, _):
         return details
 
     try:
-        details = await loop.run_in_executor(None, get_stats)
+        details = await asyncio.to_thread(get_stats)
     except Exception as e:
-        print(e)
+        LOGGER(__name__).warning(e)
         return
     try:
         await stream(

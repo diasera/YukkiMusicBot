@@ -16,7 +16,6 @@ from YukkiMusic.misc import SUDOERS
 from YukkiMusic.utils.database import (get_lang, is_maintenance,
                                        maintenance_off,
                                        maintenance_on)
-from YukkiMusic.utils.decorators.language import language
 
 # Commands
 MAINTENANCE_COMMAND = get_command("MAINTENANCE_COMMAND")
@@ -27,7 +26,7 @@ async def maintenance(client, message: Message):
     try:
         language = await get_lang(message.chat.id)
         _ = get_string(language)
-    except:
+    except Exception:
         _ = get_string("en")
     usage = _["maint_1"]
     if len(message.command) != 2:

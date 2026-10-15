@@ -37,7 +37,7 @@ class YukkiBot(Client):
             await self.send_message(
                 config.LOG_GROUP_ID, "Bot Started"
             )
-        except:
+        except Exception:
             LOGGER(__name__).error(
                 "Bot has failed to access the log Group. Make sure that you have added your bot to your log channel and promoted as admin!"
             )
@@ -57,7 +57,7 @@ class YukkiBot(Client):
                         BotCommand("settings", "Open the settings of the music bot for your chat.")
                         ]
                     )
-            except:
+            except Exception:
                 pass
         else:
             pass

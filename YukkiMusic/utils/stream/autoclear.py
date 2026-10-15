@@ -25,7 +25,7 @@ async def auto_clean(popped):
             ):
                 try:
                     os.remove(rem)
-                except:
+                except Exception:
                     pass
-    except:
+    except Exception:
         pass

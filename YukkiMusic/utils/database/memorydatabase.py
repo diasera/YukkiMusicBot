@@ -290,7 +290,7 @@ async def commanddelete_off(chat_id: int):
 async def commanddelete_on(chat_id: int):
     try:
         command.remove(chat_id)
-    except:
+    except Exception:
         pass
 
 
@@ -310,7 +310,7 @@ async def cleanmode_off(chat_id: int):
 async def cleanmode_on(chat_id: int):
     try:
         cleanmode.remove(chat_id)
-    except:
+    except Exception:
         pass
 
 

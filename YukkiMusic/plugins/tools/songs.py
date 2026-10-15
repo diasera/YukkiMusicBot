@@ -7,6 +7,7 @@
 #
 # All rights reserved.
 
+import asyncio
 import os
 import re
 
@@ -20,7 +21,7 @@ from pyrogram.types import (InlineKeyboardButton,
 from config import (BANNED_USERS, SONG_DOWNLOAD_DURATION,
                     SONG_DOWNLOAD_DURATION_LIMIT)
 from strings import get_command
-from YukkiMusic import YouTube, app
+from YukkiMusic import LOGGER, YouTube, app
 from YukkiMusic.utils.decorators.language import language, languageCB
 from YukkiMusic.utils.formatters import convert_bytes
 from YukkiMusic.utils.inline.keyboard import InlineKeyboard
@@ -101,7 +102,7 @@ async def song_commad_private(client, message: Message, _):
             thumbnail,
             vidid,
         ) = await YouTube.details(query)
-    except:
+    except Exception:
         return await mystic.edit_text(_["play_3"])
     if str(duration_min) == "None":
         return await mystic.edit_text(_["song_3"])
@@ -142,14 +143,14 @@ async def song_helper_cb(client, CallbackQuery, _):
     stype, vidid = callback_request.split("|")
     try:
         await CallbackQuery.answer(_["song_6"], show_alert=True)
-    except:
+    except Exception:
         pass
     if stype == "audio":
         try:
             formats_available, link = await YouTube.formats(
                 vidid, True
             )
-        except:
+        except Exception:
             return await CallbackQuery.edit_message_text(_["song_7"])
         keyboard = InlineKeyboard()
         done = []
@@ -189,7 +190,7 @@ async def song_helper_cb(client, CallbackQuery, _):
                 vidid, True
             )
         except Exception as e:
-            print(e)
+            LOGGER(__name__).warning(e)
             return await CallbackQuery.edit_message_text(_["song_7"])
         keyboard = InlineKeyboard()
         # AVC Formats Only [ YUKKI MUSIC BOT ]
@@ -233,17 +234,21 @@ async def song_helper_cb(client, CallbackQuery, _):
 async def song_download_cb(client, CallbackQuery, _):
     try:
         await CallbackQuery.answer("Downloading")
-    except:
+    except Exception:
         pass
     callback_data = CallbackQuery.data.strip()
     callback_request = callback_data.split(None, 1)[1]
     stype, format_id, vidid = callback_request.split("|")
     mystic = await CallbackQuery.edit_message_text(_["song_8"])
     yturl = f"https://www.youtube.com/watch?v={vidid}"
-    with yt_dlp.YoutubeDL(
-        {"quiet": True, "js_runtimes": {"deno": {}, "node": {}}}
-    ) as ytdl:
-        x = ytdl.extract_info(yturl, download=False)
+
+    def extract():
+        with yt_dlp.YoutubeDL(
+            {"quiet": True, "js_runtimes": {"deno": {}, "node": {}}}
+        ) as ytdl:
+            return ytdl.extract_info(yturl, download=False)
+
+    x = await asyncio.to_thread(extract)
     title = (x["title"]).title()
     title = re.sub(r"\W+", " ", title)
     thumb_image_path = await CallbackQuery.message.download()
@@ -279,7 +284,7 @@ async def song_download_cb(client, CallbackQuery, _):
         try:
             await CallbackQuery.edit_message_media(media=med)
         except Exception as e:
-            print(e)
+            LOGGER(__name__).warning(e)
             return await mystic.edit_text(_["song_10"])
         os.remove(file_path)
     elif stype == "audio":
@@ -308,6 +313,6 @@ async def song_download_cb(client, CallbackQuery, _):
         try:
             await CallbackQuery.edit_message_media(media=med)
         except Exception as e:
-            print(e)
+            LOGGER(__name__).warning(e)
             return await mystic.edit_text(_["song_10"])
         os.remove(filename)

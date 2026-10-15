@@ -26,7 +26,7 @@ async def inline_query_handler(client, query):
             await client.answer_inline_query(
                 query.id, results=answer, cache_time=10
             )
-        except:
+        except Exception:
             return
     else:
         a = VideosSearch(text, limit=20)
@@ -79,5 +79,5 @@ __Reply with /play on this searched message to stream it on voice chat.__
             return await client.answer_inline_query(
                 query.id, results=answers
             )
-        except:
+        except Exception:
             return

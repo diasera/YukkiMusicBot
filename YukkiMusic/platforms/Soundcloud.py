@@ -7,7 +7,7 @@
 #
 # All rights reserved.
 
-import re
+import asyncio
 from os import path
 
 from yt_dlp import YoutubeDL
@@ -32,10 +32,13 @@ class SoundAPI:
             return False
 
     async def download(self, url):
-        d = YoutubeDL(self.opts)
+        def extract():
+            with YoutubeDL(self.opts) as ydl:
+                return ydl.extract_info(url)
+
         try:
-            info = d.extract_info(url)
-        except:
+            info = await asyncio.to_thread(extract)
+        except Exception:
             return False
         xyz = path.join("downloads", f"{info['id']}.{info['ext']}")
         duration_min = seconds_to_min(info["duration"])

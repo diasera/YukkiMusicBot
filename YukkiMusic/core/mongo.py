@@ -9,8 +9,7 @@
 
 import sys
 
-from motor.motor_asyncio import AsyncIOMotorClient as _mongo_client_
-from pymongo import MongoClient
+from pymongo import AsyncMongoClient, MongoClient
 
 import config
 
@@ -22,7 +21,7 @@ if config.MONGO_DB_URI is None:
     )
     sys.exit()
 
-_mongo_async_ = _mongo_client_(config.MONGO_DB_URI)
+_mongo_async_ = AsyncMongoClient(config.MONGO_DB_URI)
 _mongo_sync_ = MongoClient(config.MONGO_DB_URI)
 mongodb = _mongo_async_.Yukki
 pymongodb = _mongo_sync_.Yukki

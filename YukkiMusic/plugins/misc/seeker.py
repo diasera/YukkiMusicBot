@@ -8,9 +8,12 @@
 # All rights reserved.
 
 import asyncio
+import time
 
+from pyrogram.errors import FloodWait
 from pyrogram.types import InlineKeyboardMarkup
 
+import config
 from strings import get_string
 from YukkiMusic.misc import db
 from YukkiMusic.utils.database import (get_active_chats, get_lang,
@@ -18,10 +21,12 @@ from YukkiMusic.utils.database import (get_active_chats, get_lang,
 from YukkiMusic.utils.formatters import seconds_to_min
 from YukkiMusic.utils.inline import (stream_markup_timer,
                                      telegram_markup_timer)
+from YukkiMusic.utils.tasks import create_task
 
 from ..admins.callback import wrong
 
-checker = {}
+# chat id -> monotonic time until which Telegram asked us not to edit there
+flood_until = {}
 
 
 async def timer():
@@ -42,13 +47,20 @@ async def timer():
             db[chat_id][0]["played"] += 1
 
 
-asyncio.create_task(timer())
+create_task(timer(), "timer")
 
 
 async def markup_timer():
-    while not await asyncio.sleep(4):
+    while not await asyncio.sleep(config.PLAYER_UPDATE_INTERVAL):
         active_chats = await get_active_chats()
-        for chat_id in active_chats:
+        now = time.monotonic()
+        for chat_id in list(flood_until):
+            if flood_until[chat_id] <= now:
+                del flood_until[chat_id]
+        # copy: chats can stop playing while this loop awaits Telegram
+        for chat_id in list(active_chats):
+            if chat_id in flood_until:
+                continue
             try:
                 if not await is_music_playing(chat_id):
                     continue
@@ -61,18 +73,18 @@ async def markup_timer():
                 try:
                     mystic = playing[0]["mystic"]
                     markup = playing[0]["markup"]
-                except:
+                except Exception:
                     continue
                 try:
                     check = wrong[chat_id][mystic.id]
                     if check is False:
                         continue
-                except:
+                except Exception:
                     pass
                 try:
                     language = await get_lang(chat_id)
                     _ = get_string(language)
-                except:
+                except Exception:
                     _ = get_string("en")
                 try:
                     buttons = (
@@ -94,10 +106,12 @@ async def markup_timer():
                     await mystic.edit_reply_markup(
                         reply_markup=InlineKeyboardMarkup(buttons)
                     )
-                except:
+                except FloodWait as e:
+                    flood_until[chat_id] = time.monotonic() + e.value
+                except Exception:
                     continue
-            except:
+            except Exception:
                 continue
 
 
-asyncio.create_task(markup_timer())
+create_task(markup_timer(), "markup_timer")

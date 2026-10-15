@@ -7,6 +7,7 @@
 #
 # All rights reserved.
 
+import asyncio
 import re
 
 import spotipy
@@ -32,6 +33,13 @@ class SpotifyAPI:
             )
         else:
             self.spotify = None
+        self._lock = asyncio.Lock()
+
+    async def _call(self, method, *args):
+        # spotipy is synchronous: run it in a thread so the bot keeps
+        # responding, one request at a time as it always was.
+        async with self._lock:
+            return await asyncio.to_thread(method, *args)
 
     async def valid(self, link: str):
         if re.search(self.regex, link):
@@ -40,7 +48,7 @@ class SpotifyAPI:
             return False
 
     async def track(self, link: str):
-        track = self.spotify.track(link)
+        track = await self._call(self.spotify.track, link)
         info = track["name"]
         for artist in track["artists"]:
             fetched = f' {artist["name"]}'
@@ -63,7 +71,7 @@ class SpotifyAPI:
         return track_details, vidid
 
     async def playlist(self, url):
-        playlist = self.spotify.playlist(url)
+        playlist = await self._call(self.spotify.playlist, url)
         playlist_id = playlist["id"]
         results = []
         for item in playlist["tracks"]["items"]:
@@ -77,7 +85,7 @@ class SpotifyAPI:
         return results, playlist_id
 
     async def album(self, url):
-        album = self.spotify.album(url)
+        album = await self._call(self.spotify.album, url)
         album_id = album["id"]
         results = []
         for item in album["tracks"]["items"]:
@@ -94,10 +102,12 @@ class SpotifyAPI:
         )
 
     async def artist(self, url):
-        artistinfo = self.spotify.artist(url)
+        artistinfo = await self._call(self.spotify.artist, url)
         artist_id = artistinfo["id"]
         results = []
-        artisttoptracks = self.spotify.artist_top_tracks(url)
+        artisttoptracks = await self._call(
+            self.spotify.artist_top_tracks, url
+        )
         for item in artisttoptracks["tracks"]:
             info = item["name"]
             for artist in item["artists"]:

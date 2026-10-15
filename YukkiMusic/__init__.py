@@ -7,6 +7,13 @@
 #
 # All rights reserved.
 
+import asyncio
+
+# Create the event loop before pyrogram is imported: pyrogram binds its sync
+# wrappers to the loop that exists at import time, and since Python 3.14
+# asyncio.get_event_loop() no longer creates one implicitly.
+asyncio.set_event_loop(asyncio.new_event_loop())
+
 from YukkiMusic.core.bot import YukkiBot
 from YukkiMusic.core.dir import dirr
 from YukkiMusic.core.git import git

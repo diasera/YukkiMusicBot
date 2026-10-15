@@ -19,6 +19,7 @@ from YukkiMusic.utils.database import (get_lang,
                                        get_private_served_chats,
                                        get_served_chats,
                                        is_suggestion)
+from YukkiMusic.utils.tasks import create_task
 
 LEAVE_TIME = config.AUTO_SUGGESTION_TIME
 
@@ -57,7 +58,7 @@ async def dont_do_this():
                     try:
                         language = await get_lang(x)
                         _ = get_string(language)
-                    except:
+                    except Exception:
                         _ = get_string("en")
                     string = random.choice(strings)
                     previous = suggestor.get(x)
@@ -80,10 +81,10 @@ async def dont_do_this():
                         }
                         clean[x].append(put)
                         send_to += 1
-                    except:
+                    except Exception:
                         pass
-            except:
+            except Exception:
                 pass
 
 
-asyncio.create_task(dont_do_this())
+create_task(dont_do_this(), "dont_do_this")

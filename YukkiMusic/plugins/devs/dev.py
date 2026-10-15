@@ -11,6 +11,7 @@
 # Credit goes to TheHamkerCat.
 #
 
+import asyncio
 import os
 import re
 import subprocess
@@ -24,7 +25,7 @@ from pyrogram import filters
 from pyrogram.types import (InlineKeyboardButton,
                             InlineKeyboardMarkup, Message)
 
-from YukkiMusic import app
+from YukkiMusic import LOGGER, app
 from YukkiMusic.misc import SUDOERS
 
 
@@ -141,12 +142,12 @@ async def forceclose_command(_, CallbackQuery):
             return await CallbackQuery.answer(
                 "You're not allowed to close this.", show_alert=True
             )
-        except:
+        except Exception:
             return
     await CallbackQuery.message.delete()
     try:
         await CallbackQuery.answer()
-    except:
+    except Exception:
         return
 
 
@@ -176,12 +177,15 @@ async def shellrunner(client, message):
                     stderr=subprocess.PIPE,
                 )
             except Exception as err:
-                print(err)
+                LOGGER(__name__).warning(err)
                 await edit_or_reply(
                     message, text=f"**ERROR:**\n```{err}```"
                 )
+                continue
             output += f"**{code}**\n"
-            output += process.stdout.read()[:-1].decode("utf-8")
+            # communicate() drains stderr too, so a chatty command can't stall
+            stdout, _ = await asyncio.to_thread(process.communicate)
+            output += stdout[:-1].decode("utf-8")
             output += "\n"
     else:
         shell = re.split(""" (?=(?:[^'"]|'[^']*'|"[^"]*")*$)""", text)
@@ -194,7 +198,7 @@ async def shellrunner(client, message):
                 stderr=subprocess.PIPE,
             )
         except Exception as err:
-            print(err)
+            LOGGER(__name__).warning(err)
             exc_type, exc_obj, exc_tb = sys.exc_info()
             errors = traceback.format_exception(
                 exc_type,
@@ -204,7 +208,8 @@ async def shellrunner(client, message):
             return await edit_or_reply(
                 message, text=f"**ERROR:**\n```{''.join(errors)}```"
             )
-        output = process.stdout.read()[:-1].decode("utf-8")
+        stdout, _ = await asyncio.to_thread(process.communicate)
+        output = stdout[:-1].decode("utf-8")
     if str(output) == "\n":
         output = None
     if output:

@@ -53,6 +53,9 @@ Config vars are basically the variables which configure or modify bot to functio
 7. `AUTO_SUGGESTION_MODE` : Set it `True` if you want to bot to suggest about bot commands to random chats of your bots. 
 9. `AUTO_SUGGESTION_TIME` : Time after which your bot will suggest random 1/10 chats of your served chats about bot commands. Default to 5400 seconds, i.e 90 Mins
 10. `SET_CMDS` : Set it to `True` if you want your bot to set the commands for chat menu automatically. [Reference](https://i.postimg.cc/Bbg3LQTG/image.png)
+11. `CALLBACK_COOLDOWN` : Seconds a user has to wait between two inline button presses, protects the bot from Telegram flood limits. Default to 2 seconds, `0` disables it.
+12. `PLAYER_UPDATE_INTERVAL` : Seconds between updates of the played-time buttons on the player and /queue messages. Default to 10 seconds, minimum 5.
+13. `GENIUS_API_KEY` : Genius API key used by /lyrics. Get your own from https://genius.com/api-clients , a shared default key is used if empty.
 
 ## Spotify Vars
 

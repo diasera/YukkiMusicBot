@@ -39,6 +39,6 @@ async def play_logs(message, streamtype):
                     f"{logger_text}",
                     link_preview_options=LinkPreviewOptions(is_disabled=True),
                 )
-            except:
+            except Exception:
                 pass
         return

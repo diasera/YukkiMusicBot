@@ -61,7 +61,7 @@ class TeleAPI:
                     else "Telegram Video File"
                 )
 
-        except:
+        except Exception:
             file_name = (
                 "Telegram Audio File"
                 if audio
@@ -72,7 +72,7 @@ class TeleAPI:
     async def get_duration(self, file):
         try:
             dur = seconds_to_min(file.duration)
-        except:
+        except Exception:
             dur = "Unknown"
         return dur
 
@@ -92,7 +92,7 @@ class TeleAPI:
                         else "ogg"
                     )
                 )
-            except:
+            except Exception:
                 file_name = audio.file_unique_id + "." + ".ogg"
             file_name = os.path.join(
                 os.path.realpath("downloads"), file_name
@@ -104,7 +104,7 @@ class TeleAPI:
                     + "."
                     + (video.file_name.split(".")[-1])
                 )
-            except:
+            except Exception:
                 file_name = video.file_unique_id + "." + "mp4"
             file_name = os.path.join(
                 os.path.realpath("downloads"), file_name
@@ -157,7 +157,7 @@ class TeleAPI:
 **ETA:** {eta}"""
                     try:
                         await mystic.edit_text(text, reply_markup=upl)
-                    except:
+                    except Exception:
                         pass
                     left_time[
                         message.id
@@ -175,8 +175,8 @@ class TeleAPI:
                 await mystic.edit_text(
                     "Successfully Downloaded.. Processing file now"
                 )
-                downloader.pop(message.id)
-            except:
+                downloader.pop(message.id, None)
+            except Exception:
                 await mystic.edit_text(_["tg_2"])
 
         if len(downloader) > 10:
@@ -186,14 +186,23 @@ class TeleAPI:
             try:
                 low = min(timers)
                 eta = get_readable_time(low)
-            except:
+            except Exception:
                 eta = "Unknown"
             await mystic.edit_text(_["tg_1"].format(eta))
             return False
 
         task = asyncio.create_task(down_load())
         lyrical[mystic.id] = task
-        await task
+        try:
+            await task
+        except asyncio.CancelledError:
+            # Raised by the "Cancel Downloading" button; re-raise only when
+            # this handler itself is being cancelled (bot shutdown).
+            if asyncio.current_task().cancelling():
+                raise
+            downloader.pop(message.id, None)
+            lyrical.pop(mystic.id, None)
+            return False
         downloaded = downloader.get(message.id)
         if downloaded:
             downloader.pop(message.id)

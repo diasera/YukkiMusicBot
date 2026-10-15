@@ -78,7 +78,7 @@ class AppleAPI:
                         0
                     ]
                 ).replace("-", " ")
-            except:
+            except Exception:
                 xx = ((item["content"]).split("album/")[1]).split(
                     "/"
                 )[0]

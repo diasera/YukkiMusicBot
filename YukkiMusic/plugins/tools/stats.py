@@ -21,9 +21,10 @@ from pytgcalls.__version__ import __version__ as pytgver
 import config
 from config import BANNED_USERS, MUSIC_BOT_NAME
 from strings import get_command
-from YukkiMusic import YouTube, app
+from YukkiMusic import LOGGER, YouTube, app
+from YukkiMusic.core.mongo import mongodb
 from YukkiMusic.core.userbot import assistants
-from YukkiMusic.misc import SUDOERS, pymongodb
+from YukkiMusic.misc import SUDOERS
 from YukkiMusic.plugins import ALL_MODULES
 from YukkiMusic.utils.database import (get_global_tops,
                                        get_particulars, get_queries,
@@ -37,8 +38,6 @@ from YukkiMusic.utils.inline.stats import (back_stats_buttons,
                                            overallback_stats_markup,
                                            stats_buttons,
                                            top_ten_stats_markup)
-
-loop = asyncio.get_running_loop()
 
 # Commands
 GSTATS_COMMAND = get_command("GSTATS_COMMAND")
@@ -101,9 +100,9 @@ async def gstats_global(client, message: Message, _):
         return videoid, co
 
     try:
-        videoid, co = await loop.run_in_executor(None, get_stats)
+        videoid, co = await asyncio.to_thread(get_stats)
     except Exception as e:
-        print(e)
+        LOGGER(__name__).warning(e)
         return
     (
         title,
@@ -135,7 +134,7 @@ async def top_users_ten(client, CallbackQuery: CallbackQuery, _):
     upl = back_stats_markup(_)
     try:
         await CallbackQuery.answer()
-    except:
+    except Exception:
         pass
     mystic = await CallbackQuery.edit_message_text(
         _["gstats_3"].format(
@@ -208,11 +207,9 @@ async def top_users_ten(client, CallbackQuery: CallbackQuery, _):
         return msg, list_arranged
 
     try:
-        msg, list_arranged = await loop.run_in_executor(
-            None, get_stats
-        )
+        msg, list_arranged = await asyncio.to_thread(get_stats)
     except Exception as e:
-        print(e)
+        LOGGER(__name__).warning(e)
         return
     limit = 0
     if what in ["Users", "Chats"]:
@@ -228,7 +225,7 @@ async def top_users_ten(client, CallbackQuery: CallbackQuery, _):
                 if extract is None:
                     continue
                 await asyncio.sleep(0.5)
-            except:
+            except Exception:
                 continue
             limit += 1
             msg += f"🔗`{extract}` played {count} times on bot.\n\n"
@@ -260,7 +257,7 @@ async def overall_stats(client, CallbackQuery, _):
         upl = back_stats_buttons(_)
     try:
         await CallbackQuery.answer()
-    except:
+    except Exception:
         pass
     await CallbackQuery.edit_message_text(_["gstats_8"])
     served_chats = len(await get_served_chats())
@@ -309,7 +306,7 @@ async def overall_stats(client, CallbackQuery, _):
 
 @app.on_callback_query(filters.regex("bot_stats_sudo"))
 @languageCB
-async def overall_stats(client, CallbackQuery, _):
+async def bot_stats_sudo(client, CallbackQuery, _):
     if CallbackQuery.from_user.id not in SUDOERS:
         return await CallbackQuery.answer(
             "Only for Sudo Users", show_alert=True
@@ -322,7 +319,7 @@ async def overall_stats(client, CallbackQuery, _):
         upl = back_stats_buttons(_)
     try:
         await CallbackQuery.answer()
-    except:
+    except Exception:
         pass
     await CallbackQuery.edit_message_text(_["gstats_8"])
     sc = platform.system()
@@ -338,7 +335,7 @@ async def overall_stats(client, CallbackQuery, _):
             cpu_freq = f"{round(cpu_freq / 1000, 2)}GHz"
         else:
             cpu_freq = f"{round(cpu_freq, 2)}MHz"
-    except:
+    except Exception:
         cpu_freq = "Unable to Fetch"
     hdd = psutil.disk_usage("/")
     total = hdd.total / (1024.0**3)
@@ -348,14 +345,13 @@ async def overall_stats(client, CallbackQuery, _):
     free = hdd.free / (1024.0**3)
     free = str(free)
     mod = len(ALL_MODULES)
-    db = pymongodb
-    call = db.command("dbstats")
+    call = await mongodb.command("dbstats")
     datasize = call["dataSize"] / 1024
     datasize = str(datasize)
     storage = call["storageSize"] / 1024
     objects = call["objects"]
     collections = call["collections"]
-    status = db.command("serverStatus")
+    status = await mongodb.command("serverStatus")
     query = status["opcounters"]["query"]
     mongouptime = status["uptime"] / 86400
     mongouptime = str(mongouptime)
@@ -413,7 +409,7 @@ async def overall_stats(client, CallbackQuery, _):
 async def back_buttons(client, CallbackQuery, _):
     try:
         await CallbackQuery.answer()
-    except:
+    except Exception:
         pass
     command = CallbackQuery.matches[0].group(1)
     if command == "TOPMARKUPGET":

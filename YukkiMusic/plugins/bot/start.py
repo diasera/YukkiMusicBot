@@ -19,7 +19,7 @@ import config
 from config import BANNED_USERS
 from config.config import OWNER_ID
 from strings import get_command, get_string
-from YukkiMusic import Telegram, YouTube, app
+from YukkiMusic import LOGGER, Telegram, YouTube, app
 from YukkiMusic.misc import SUDOERS
 from YukkiMusic.plugins.play.playlist import del_plist_msg
 from YukkiMusic.plugins.sudo.sudoers import sudoers_list
@@ -32,8 +32,6 @@ from YukkiMusic.utils.database import (add_served_chat,
 from YukkiMusic.utils.decorators.language import LanguageStart
 from YukkiMusic.utils.inline import (help_pannel, private_panel,
                                      start_pannel)
-
-loop = asyncio.get_running_loop()
 
 
 @app.on_message(
@@ -98,11 +96,9 @@ async def start_comm(client, message: Message, _):
                 return videoid, msg
 
             try:
-                videoid, msg = await loop.run_in_executor(
-                    None, get_stats
-                )
+                videoid, msg = await asyncio.to_thread(get_stats)
             except Exception as e:
-                print(e)
+                LOGGER(__name__).warning(e)
                 return
             thumbnail = await YouTube.thumbnail(videoid, True)
             await m.delete()
@@ -190,7 +186,7 @@ async def start_comm(client, message: Message, _):
         try:
             await app.resolve_peer(OWNER_ID[0])
             OWNER = OWNER_ID[0]
-        except:
+        except Exception:
             OWNER = None
         out = private_panel(_, app.username, OWNER)
         if config.START_IMG_URL:
@@ -202,7 +198,7 @@ async def start_comm(client, message: Message, _):
                     ),
                     reply_markup=InlineKeyboardMarkup(out),
                 )
-            except:
+            except Exception:
                 await message.reply_text(
                     _["start_2"].format(config.MUSIC_BOT_NAME),
                     reply_markup=InlineKeyboardMarkup(out),
@@ -290,5 +286,5 @@ async def welcome(client, message: Message):
                     )
                 )
             return
-        except:
+        except Exception:
             return

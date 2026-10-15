@@ -7,10 +7,6 @@
 #
 # All rights reserved.
 
-from typing import Union
-
-from pyrogram.types import Message
-
 
 def get_readable_time(seconds: int) -> str:
     count = 0

@@ -134,6 +134,18 @@ TG_VIDEO_FILESIZE_LIMIT = int(
 
 # Chceckout https://www.gbmb.org/mb-to-bytes  for converting mb to bytes
 
+# Seconds a user has to wait between two inline button presses (0 disables it)
+CALLBACK_COOLDOWN = float(getenv("CALLBACK_COOLDOWN") or 2)
+
+# Seconds between updates of the played-time buttons on the player and /queue messages (minimum 5)
+PLAYER_UPDATE_INTERVAL = max(5, int(getenv("PLAYER_UPDATE_INTERVAL") or 10))
+
+# Genius API key used by /lyrics. Get your own from https://genius.com/api-clients
+GENIUS_API_KEY = (
+    getenv("GENIUS_API_KEY")
+    or "Vd9FvPMOKWfsKJNG9RbZnItaTNIRFzVyyXFdrGHONVsGqHcHBoj3AI3sIlNuqzuf0ZNG8uLcF9wAd5DXBBnUzA"
+)
+
 # If you want your bot to setup the commands automatically in the bot's menu set it to true.
 # Refer to https://i.postimg.cc/Bbg3LQTG/image.png
 SET_CMDS = getenv("SET_CMDS", False)

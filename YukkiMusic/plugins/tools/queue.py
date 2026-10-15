@@ -9,10 +9,9 @@
 
 import asyncio
 import os
-from random import randint
 
 from pyrogram import filters
-from pyrogram.errors import FloodWait
+from pyrogram.errors import FloodWait, MessageNotModified
 from pyrogram.types import CallbackQuery, InputMediaPhoto, Message
 
 import config
@@ -26,11 +25,14 @@ from YukkiMusic.utils.database import (get_cmode, is_active_chat,
                                        is_music_playing)
 from YukkiMusic.utils.decorators.language import language, languageCB
 from YukkiMusic.utils.inline import queue_back_markup, queue_markup
+from YukkiMusic.utils.tasks import create_task
 
 ###Commands
 QUEUE_COMMAND = get_command("QUEUE_COMMAND")
 
-basic = {}
+# Only the newest /queue card of a chat keeps a live timer:
+# chat id of the card -> (message id, task updating it)
+timers = {}
 
 
 def get_image(videoid):
@@ -38,6 +40,57 @@ def get_image(videoid):
         return f"cache/{videoid}.png"
     else:
         return config.YOUTUBE_IMG_URL
+
+
+def start_timer(mystic, _, chat_id, cplay, track, DUR):
+    card_chat = mystic.chat.id
+    stop_timer(card_chat)
+    task = create_task(
+        update_timer(mystic, _, chat_id, cplay, track, DUR),
+        f"queue_timer_{card_chat}",
+    )
+    timers[card_chat] = (mystic.id, task)
+
+
+def stop_timer(card_chat, message_id=None):
+    entry = timers.get(card_chat)
+    if entry and message_id in (None, entry[0]):
+        del timers[card_chat]
+        entry[1].cancel()
+
+
+async def update_timer(mystic, _, chat_id, cplay, track, DUR):
+    """Refresh the played-time button until the track on the card ends."""
+    try:
+        while True:
+            await asyncio.sleep(config.PLAYER_UPDATE_INTERVAL)
+            playing = db.get(chat_id)
+            if not playing or playing[0] is not track:
+                return
+            if not await is_active_chat(chat_id):
+                return
+            if not await is_music_playing(chat_id):
+                continue
+            buttons = queue_markup(
+                _,
+                DUR,
+                cplay,
+                track["vidid"],
+                seconds_to_min(track["played"]),
+                track["dur"],
+            )
+            try:
+                await mystic.edit_reply_markup(reply_markup=buttons)
+            except MessageNotModified:
+                pass
+            except FloodWait as e:
+                await asyncio.sleep(e.value)
+            except Exception:
+                return
+    finally:
+        entry = timers.get(mystic.chat.id)
+        if entry and entry[1] is asyncio.current_task():
+            del timers[mystic.chat.id]
 
 
 def get_duration(playing):
@@ -62,7 +115,7 @@ async def ping_com(client, message: Message, _):
             return await message.reply_text(_["setting_12"])
         try:
             await app.get_chat(chat_id)
-        except:
+        except Exception:
             return await message.reply_text(_["cplay_4"])
         cplay = True
     else:
@@ -120,48 +173,20 @@ async def ping_com(client, message: Message, _):
             got[0]["dur"],
         )
     )
-    basic[videoid] = True
     mystic = await message.reply_photo(
         IMAGE, caption=cap, reply_markup=upl
     )
     if DUR != "Unknown":
-        try:
-            while db[chat_id][0]["vidid"] == videoid:
-                await asyncio.sleep(5)
-                if await is_active_chat(chat_id):
-                    if basic[videoid]:
-                        if await is_music_playing(chat_id):
-                            try:
-                                buttons = queue_markup(
-                                    _,
-                                    DUR,
-                                    "c" if cplay else "g",
-                                    videoid,
-                                    seconds_to_min(
-                                        db[chat_id][0]["played"]
-                                    ),
-                                    db[chat_id][0]["dur"],
-                                )
-                                await mystic.edit_reply_markup(
-                                    reply_markup=buttons
-                                )
-                            except FloodWait:
-                                pass
-                        else:
-                            pass
-                    else:
-                        break
-                else:
-                    break
-        except:
-            return
+        start_timer(
+            mystic, _, chat_id, "c" if cplay else "g", got[0], DUR
+        )
 
 
 @app.on_callback_query(filters.regex("GetTimer") & ~BANNED_USERS)
 async def quite_timer(client, CallbackQuery: CallbackQuery):
     try:
         await CallbackQuery.answer()
-    except:
+    except Exception:
         pass
 
 
@@ -175,7 +200,7 @@ async def queued_tracks(client, CallbackQuery: CallbackQuery, _):
         chat_id, channel = await get_channeplayCB(
             _, what, CallbackQuery
         )
-    except:
+    except Exception:
         return
     if not await is_active_chat(chat_id):
         return await CallbackQuery.answer(
@@ -191,7 +216,7 @@ async def queued_tracks(client, CallbackQuery: CallbackQuery, _):
             _["queue_5"], show_alert=True
         )
     await CallbackQuery.answer()
-    basic[videoid] = False
+    stop_timer(CallbackQuery.message.chat.id, CallbackQuery.message.id)
     buttons = queue_back_markup(_, what)
     med = InputMediaPhoto(
         media="https://telegra.ph//file/6f7d35131f69951c74ee5.jpg",
@@ -241,7 +266,7 @@ async def queue_back(client, CallbackQuery: CallbackQuery, _):
         chat_id, channel = await get_channeplayCB(
             _, cplay, CallbackQuery
         )
-    except:
+    except Exception:
         return
     if not await is_active_chat(chat_id):
         return await CallbackQuery.answer(
@@ -300,40 +325,9 @@ async def queue_back(client, CallbackQuery: CallbackQuery, _):
             got[0]["dur"],
         )
     )
-    basic[videoid] = True
-
     med = InputMediaPhoto(media=IMAGE, caption=cap)
     mystic = await CallbackQuery.edit_message_media(
         media=med, reply_markup=upl
     )
     if DUR != "Unknown":
-        try:
-            while db[chat_id][0]["vidid"] == videoid:
-                await asyncio.sleep(5)
-                if await is_active_chat(chat_id):
-                    if basic[videoid]:
-                        if await is_music_playing(chat_id):
-                            try:
-                                buttons = queue_markup(
-                                    _,
-                                    DUR,
-                                    cplay,
-                                    videoid,
-                                    seconds_to_min(
-                                        db[chat_id][0]["played"]
-                                    ),
-                                    db[chat_id][0]["dur"],
-                                )
-                                await mystic.edit_reply_markup(
-                                    reply_markup=buttons
-                                )
-                            except FloodWait:
-                                pass
-                        else:
-                            pass
-                    else:
-                        break
-                else:
-                    break
-        except:
-            return
+        start_timer(mystic, _, chat_id, cplay, got[0], DUR)

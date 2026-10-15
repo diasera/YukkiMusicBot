@@ -24,12 +24,12 @@ def language(mystic):
         if await is_commanddelete_on(message.chat.id):
             try:
                 await message.delete()
-            except:
+            except Exception:
                 pass
         try:
             language = await get_lang(message.chat.id)
             language = get_string(language)
-        except:
+        except Exception:
             language = get_string("en")
         return await mystic(_, message, language)
 
@@ -47,7 +47,7 @@ def languageCB(mystic):
         try:
             language = await get_lang(CallbackQuery.message.chat.id)
             language = get_string(language)
-        except:
+        except Exception:
             language = get_string("en")
         return await mystic(_, CallbackQuery, language)
 
@@ -59,7 +59,7 @@ def LanguageStart(mystic):
         try:
             language = await get_lang(message.chat.id)
             language = get_string(language)
-        except:
+        except Exception:
             language = get_string("en")
         return await mystic(_, message, language)
 
