@@ -9,15 +9,17 @@
 #
 
 import glob
-from os.path import dirname, isfile
+import os
+from os.path import dirname, isfile, relpath, splitext
 
 
 def __list_all_modules():
     work_dir = dirname(__file__)
-    mod_paths = glob.glob(work_dir + "/*/*.py")
+    mod_paths = glob.glob(os.path.join(work_dir, "*", "*.py"))
 
+    # os.sep keeps module names valid on Windows ("\") as well as Linux ("/")
     all_modules = [
-        (((f.replace(work_dir, "")).replace("/", "."))[:-3])
+        "." + splitext(relpath(f, work_dir))[0].replace(os.sep, ".")
         for f in mod_paths
         if isfile(f)
         and f.endswith(".py")
